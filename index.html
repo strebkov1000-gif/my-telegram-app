@@ -1,38 +1,241 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <title>My First Mini App</title>
+    <title>Telegram Folders Sharing</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: var(--tg-theme-bg-color, #ffffff);
+            color: var(--tg-theme-text-color, #000000);
+            padding: 16px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .folder-card {
+            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+            border-left: 4px solid #0088cc;
+        }
+
+        .folder-name {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 8px;
+        }
+
+        .folder-description {
+            color: var(--tg-theme-hint-color, #999999);
+            margin-bottom: 8px;
+            font-size: 14px;
+        }
+
+        .channels-list {
+            background: var(--tg-theme-bg-color, #ffffff);
+            border-radius: 8px;
+            padding: 8px;
+            margin: 8px 0;
+        }
+
+        .channel-item {
+            padding: 4px 0;
+            font-size: 14px;
+        }
+
+        .add-btn {
             background: #0088cc;
             color: white;
-            text-align: center;
-        }
-        button {
-            background: white;
-            color: #0088cc;
             border: none;
-            padding: 15px 30px;
+            padding: 12px 24px;
             border-radius: 25px;
-            font-size: 18px;
-            margin: 10px;
+            font-size: 16px;
+            width: 100%;
+            margin: 16px 0;
             cursor: pointer;
+        }
+
+        .form-popup {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.5);
+            z-index: 1000;
+        }
+
+        .form-content {
+            background: var(--tg-theme-bg-color, #ffffff);
+            margin: 20% auto;
+            padding: 20px;
+            border-radius: 12px;
+            width: 90%;
+            max-width: 400px;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 12px;
+            margin: 8px 0;
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+        }
+
+        .author {
+            font-size: 12px;
+            color: var(--tg-theme-hint-color, #999999);
+            text-align: right;
         }
     </style>
 </head>
 <body>
-    <h1>🎯 Моё первое приложение!</h1>
-    <p>Это работает в Telegram!</p>
+    <div class="container">
+        <div class="header">
+            <h1>📁 Общие папки Telegram</h1>
+            <p>Добавляйте и находите интересные подборки каналов</p>
+        </div>
 
-    <button onclick="alert('Привет из Mini App!')">Нажми меня</button>
-    <button onclick="Telegram.WebApp.close()">Закрыть</button>
+        <button class="add-btn" onclick="showForm()">➕ Добавить папку</button>
+
+        <div id="folders-list">
+            <!-- Сюда загружаются папки -->
+            <div class="loading">Загрузка...</div>
+        </div>
+    </div>
+
+    <!-- Форма добавления папки -->
+    <div id="addForm" class="form-popup">
+        <div class="form-content">
+            <h3>Добавить папку</h3>
+            <input type="text" id="folderName" class="form-input" placeholder="Название папки" required>
+            <input type="text" id="folderDesc" class="form-input" placeholder="Описание" required>
+            <textarea id="folderChannels" class="form-input" placeholder="Список каналов (через запятую)" rows="3" required></textarea>
+            <input type="text" id="folderAuthor" class="form-input" placeholder="Ваше имя (необязательно)">
+
+            <button class="add-btn" onclick="addFolder()">📁 Создать папку</button>
+            <button class="add-btn" onclick="hideForm()" style="background: #666; margin-top: 8px;">Отмена</button>
+        </div>
+    </div>
 
     <script>
-        // Telegram Web App инициализирован автоматически
-        console.log("Mini App загружена!");
+        const API_URL = 'https://твой-бэкенд.herokuapp.com'; // Замени на свой URL
+
+        // Загрузка папок при старте
+        loadFolders();
+
+        async function loadFolders() {
+            try {
+                const response = await fetch(`${API_URL}/api/folders`);
+                const folders = await response.json();
+
+                displayFolders(folders);
+            } catch (error) {
+                console.error('Ошибка загрузки:', error);
+                document.getElementById('folders-list').innerHTML =
+                    '<div class="folder-card">Ошибка загрузки данных</div>';
+            }
+        }
+
+        function displayFolders(folders) {
+            const container = document.getElementById('folders-list');
+
+            if (folders.length === 0) {
+                container.innerHTML = '<div class="folder-card">Пока нет папок. Будьте первым!</div>';
+                return;
+            }
+
+            container.innerHTML = folders.map(folder => `
+                <div class="folder-card">
+                    <div class="folder-name">${folder.name}</div>
+                    <div class="folder-description">${folder.description}</div>
+                    <div class="channels-list">
+                        ${folder.channels.split(',').map(channel =>
+                            `<div class="channel-item">📢 ${channel.trim()}</div>`
+                        ).join('')}
+                    </div>
+                    <div class="author">👤 ${folder.author} • ❤️ ${folder.likes}</div>
+                </div>
+            `).join('');
+        }
+
+        function showForm() {
+            document.getElementById('addForm').style.display = 'block';
+        }
+
+        function hideForm() {
+            document.getElementById('addForm').style.display = 'none';
+        }
+
+        async function addFolder() {
+            const name = document.getElementById('folderName').value;
+            const description = document.getElementById('folderDesc').value;
+            const channels = document.getElementById('folderChannels').value;
+            const author = document.getElementById('folderAuthor').value || 'Аноним';
+
+            if (!name || !description || !channels) {
+                alert('Заполните все обязательные поля');
+                return;
+            }
+
+            const folderData = {
+                name: name,
+                description: description,
+                channels: channels,
+                author: author,
+                created_at: new Date().toISOString()
+            };
+
+            try {
+                const response = await fetch(`${API_URL}/api/folders`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify(folderData)
+                });
+
+                const result = await response.json();
+
+                if (result.success) {
+                    hideForm();
+                    loadFolders(); // Перезагружаем список
+                    // Очищаем форму
+                    document.getElementById('folderName').value = '';
+                    document.getElementById('folderDesc').value = '';
+                    document.getElementById('folderChannels').value = '';
+                    document.getElementById('folderAuthor').value = '';
+                }
+            } catch (error) {
+                console.error('Ошибка добавления:', error);
+                alert('Ошибка при создании папки');
+            }
+        }
+
+        // Закрытие формы по клику вне её
+        document.getElementById('addForm').addEventListener('click', function(e) {
+            if (e.target.id === 'addForm') {
+                hideForm();
+            }
+        });
     </script>
 </body>
 </html>
