@@ -1,0 +1,36 @@
+# Virtual environment
+venv/
+.env/
+.env.local
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# PyCharm
+.idea/
+*.iml
+*.iws
+*.ipr
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+logs/
+
+# Database
+*.db
+*.sqlite3
+
+# Telegram bot token (если хранишь в файле)
+config.py
+secrets.py
+
+# Temporary files
+*.tmp
+*.temp
