@@ -28,7 +28,7 @@
         }
 
         .folder-card {
-            background: var(--tg-theme-secondary-bg-color, #f0f0f0);
+            background: var(--tg-theme-secondary-bg-color, #7f4bd1);
             border-radius: 12px;
             padding: 16px;
             margin-bottom: 12px;
@@ -103,7 +103,7 @@
 
         .form-label {
             font-size: 14px;
-            color: var(--tg-theme-hint-color, #999999);
+            color: var(--tg-theme-hint-color, #2e3e90);
             margin-bottom: 4px;
             display: block;
         }
@@ -290,30 +290,29 @@
     const name = document.getElementById('folderName').value.trim();
     const description = document.getElementById('folderDesc').value.trim();
     const author = document.getElementById('folderAuthor').value.trim() || 'Аноним';
-
+    
     if (!link || !name) {
         showMessage('Заполните ссылку и название папки', 'error');
         return;
     }
-
+    
     // Проверяем что это ссылка Telegram
     if (!link.includes('t.me/addlist/')) {
         showMessage('Введите корректную ссылку на папку Telegram', 'error');
         return;
     }
-
+    
     const folderData = {
         name: name,
-        description: description || `Папка с интересными каналами`,
+        description: description || 'Интересная подборка каналов',
         channels: `Ссылка на папку: ${link}`,
         author: author,
-        link: link,
-        created_at: new Date().toISOString().split('T')[0]
+        link: link
     };
-
+    
     try {
         showMessage('Добавляем папку...', 'info');
-
+        
         const response = await fetch(`${API_URL}/api/folders`, {
             method: 'POST',
             headers: {
@@ -321,19 +320,22 @@
             },
             body: JSON.stringify(folderData)
         });
-
+        
         const result = await response.json();
-
+        
         if (result.success) {
-            showMessage('Папка успешно добавлена! ✅', 'success');
-            hideForm(); // ✅ ЗАКРЫВАЕМ ФОРМУ
-            loadFolders(); // ✅ ПЕРЕЗАГРУЖАЕМ СПИСОК
+            showMessage('✅ Папка успешно добавлена!', 'success');
+            // Закрываем форму и обновляем список
+            hideForm();
+            setTimeout(() => {
+                loadFolders();
+            }, 1000);
         } else {
-            showMessage('Ошибка: ' + result.error, 'error');
+            showMessage('❌ Ошибка: ' + result.error, 'error');
         }
     } catch (error) {
         console.error('Ошибка добавления:', error);
-        showMessage('Ошибка при создании папки', 'error');
+        showMessage('❌ Ошибка при создании папки', 'error');
     }
 }
 
